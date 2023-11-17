@@ -21,7 +21,7 @@ internal class EventQueue {
 
     private var stopped = false
 
-    fun poll(): Event {
+    fun poll(): Event? {
         while (!stopped) {
             val event = nearestEvent()
             if (event == null) {
@@ -39,7 +39,7 @@ internal class EventQueue {
                 }
             }
         }
-        throw PollingStoppedException()
+        return null
     }
 
     fun <T> enqueue(
@@ -87,6 +87,4 @@ internal class EventQueue {
         stopped = true
         unpark()
     }
-
-    internal class PollingStoppedException : Throwable()
 }

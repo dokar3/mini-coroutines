@@ -8,12 +8,7 @@ internal class EventLoop(internal val queue: EventQueue) {
     fun loop() {
         while (!quited) {
             // Poll events
-            val event = try {
-                queue.poll()
-            } catch (e: EventQueue.PollingStoppedException) {
-                quited = true
-                break
-            }
+            val event = queue.poll() ?: break
             val task = event.task
             // Listen for delay calls
             task.onReschedule = { rescheduleDelayedTask(task, it) }
@@ -30,6 +25,7 @@ internal class EventLoop(internal val queue: EventQueue) {
                 task.start()
             }
         }
+        quited = true
     }
 
     private fun rescheduleDelayedTask(task: TaskImpl<*>, delayMillis: Long) {
