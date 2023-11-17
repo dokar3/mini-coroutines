@@ -5,7 +5,6 @@ import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.intrinsics.createCoroutineUnintercepted
-import kotlin.coroutines.intrinsics.intercepted
 import kotlin.coroutines.resume
 import kotlin.coroutines.startCoroutine
 import kotlin.coroutines.suspendCoroutine
@@ -83,7 +82,6 @@ internal class TaskImpl<T>(
         if (isCanceled) return
         val continuation = coroutine ?: block
             .createCoroutineUnintercepted(completion = this)
-            .intercepted()
             .also { this.coroutine = it }
         continuation.resume(Unit)
     }

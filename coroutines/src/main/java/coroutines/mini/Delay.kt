@@ -1,17 +1,18 @@
 package coroutines.mini
 
 import kotlin.coroutines.Continuation
-import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.suspendCoroutine
 
 /// Based on the original Delay implementation
 
-interface Delay {
+interface Delay : CoroutineContext.Element {
     fun scheduleResumeAfterDelay(
         timeMillis: Long,
         continuation: Continuation<Unit>,
     )
+
+    companion object : CoroutineContext.Key<Delay>
 }
 
 suspend fun delay(timeMillis: Long) {
@@ -23,10 +24,11 @@ suspend fun delay(timeMillis: Long) {
     }
 }
 
-private val CoroutineContext.delay: Delay
-    get() = this[ContinuationInterceptor] as? Delay ?: DefaultDelay
+private val CoroutineContext.delay: Delay get() = this[Delay] ?: DefaultDelay
 
 private object DefaultDelay : Delay {
+    override val key: CoroutineContext.Key<*> = Delay
+
     override fun scheduleResumeAfterDelay(
         timeMillis: Long,
         continuation: Continuation<Unit>
@@ -37,17 +39,8 @@ private object DefaultDelay : Delay {
 
 internal class TaskDelay(
     private val task: TaskImpl<*>,
-) : Delay,
-    ContinuationInterceptor,
-    CoroutineContext.Element,
-    CoroutineContext.Key<TaskDelay> {
-    override val key: CoroutineContext.Key<*> = this
-
-    override fun <T> interceptContinuation(
-        continuation: Continuation<T>
-    ): Continuation<T> {
-        return continuation
-    }
+) : Delay {
+    override val key: CoroutineContext.Key<*> = Delay
 
     override fun scheduleResumeAfterDelay(
         timeMillis: Long,
