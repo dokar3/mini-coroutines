@@ -23,7 +23,7 @@ internal class EventQueue {
 
     fun poll(): Event? {
         while (!stopped) {
-            val event = nearestEvent()
+            val event = oldestEvent()
             if (event == null) {
                 // Wait for new events
                 park()
@@ -56,7 +56,7 @@ internal class EventQueue {
         unpark()
     }
 
-    private fun nearestEvent(): Event? = queueLock.read {
+    private fun oldestEvent(): Event? = queueLock.read {
         return queue.firstOrNull()
     }
 
