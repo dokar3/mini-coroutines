@@ -5,9 +5,9 @@ A minimal Kotlin/JVM Coroutines runtime.
 ### How minimal?
 
 ```
-======= .kt Line Counter ======
-          Lines: 490
-Non-empty lines: 407
+======= .kt Line Counter =======
+          Lines: 475
+Non-empty lines: 392
 ```
 
 ### What's present?
@@ -17,7 +17,7 @@ Non-empty lines: 407
 - `await()`, `cancel()` Control launched coroutine tasks
 - `withContext {}` Switch to another coroutine context. It just calls `launch` and `await`s the result
 - `delay()` Delay the coroutine execution. It reschedules the current task to the event queue
-- `Dispatchers` Decide the thread(pool) to run coroutine (`Main` dispatcher is not supported yet)
+- `Dispatchers` Decide the thread(pool) to run coroutines (`Main` dispatcher is not supported yet)
 
 ### What's missing?
 

@@ -15,7 +15,7 @@ subprojects {
         }
         println(
             """
-                ======= .kt Line Counter ======
+                ======= .kt Line Counter =======
                           Lines: $lineCount
                 Non-empty lines: $nonEmptyLineCount
             """.trimIndent()
