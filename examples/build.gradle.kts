@@ -10,3 +10,7 @@ repositories {
 dependencies {
     implementation(project(":coroutines"))
 }
+
+kotlin {
+    jvmToolchain(21)
+}
