@@ -1,6 +1,8 @@
 package coroutines.mini
 
+import java.util.LinkedList
 import java.util.PriorityQueue
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.LockSupport
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
@@ -15,27 +17,34 @@ internal class EventQueue {
         a.time.toString().compareTo(b.time.toString())
     }
 
+    private val queue = LinkedList<Event>()
+    private val queueLock = Any()
+
     // PriorityQueue + read write lock seems faster PriorityBlockingQueue or others
-    private var queue = PriorityQueue(eventComparator)
-    private val queueLock = ReentrantReadWriteLock()
+    private val delayQueue = PriorityQueue(eventComparator)
+    private val delayQueueLock = ReentrantReadWriteLock()
 
     private var stopped = false
 
     fun poll(): Event? {
         while (!stopped) {
-            val event = oldestEvent()
-            if (event == null) {
+            val event = pollEvent()
+            if (event != null) {
+                return event
+            }
+            val delayedEvent = delayedEvent()
+            if (delayedEvent == null) {
                 // Wait for new events
                 park()
                 continue
             } else {
                 val now = System.nanoTime()
-                val delay = event.time - now
+                val delay = delayedEvent.time - now
                 val elapsed = parkNanos(delay)
                 if (elapsed >= delay) {
                     // Done, remove the event
-                    removeEvent(event)
-                    return event
+                    removedDelayed(delayedEvent)
+                    return delayedEvent
                 }
             }
         }
@@ -47,21 +56,35 @@ internal class EventQueue {
         block: suspend () -> T,
     ): Task<T> {
         val task = TaskImpl(block = block, context = context)
-        enqueue(Event(task = task))
+        val event = Event(task = task)
+        synchronized(queueLock) {
+            queue.add(event)
+            unpark()
+        }
         return task
     }
 
-    fun enqueue(event: Event) = queueLock.write {
-        queue.add(event)
-        unpark()
+    private fun pollEvent(): Event? = synchronized(queueLock) {
+        return queue.removeFirstOrNull()
     }
 
-    private fun oldestEvent(): Event? = queueLock.read {
-        return queue.firstOrNull()
+    internal fun <T> enqueueDelayed(task: TaskImpl<T>, delayMillis: Long) {
+        val event = Event(
+            task = task,
+            time = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(delayMillis),
+        )
+        delayQueueLock.write {
+            delayQueue.add(event)
+            unpark()
+        }
     }
 
-    private fun removeEvent(event: Event) = queueLock.write {
-        queue.remove(event)
+    private fun delayedEvent(): Event? = delayQueueLock.read {
+        delayQueue.firstOrNull()
+    }
+
+    private fun removedDelayed(event: Event) = delayQueueLock.write {
+        delayQueue.remove(event)
     }
 
     private fun park() {

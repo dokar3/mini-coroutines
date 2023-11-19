@@ -6,8 +6,8 @@ A minimal Kotlin/JVM Coroutines runtime.
 
 ```
 ======= .kt Line Counter =======
-          Lines: 475
-Non-empty lines: 392
+          Lines: 486
+Non-empty lines: 403
 ```
 
 ### What's present?

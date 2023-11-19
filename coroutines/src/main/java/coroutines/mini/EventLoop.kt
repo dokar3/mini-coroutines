@@ -1,7 +1,5 @@
 package coroutines.mini
 
-import java.util.concurrent.TimeUnit
-
 internal class EventLoop(internal val queue: EventQueue) {
     private var quited = false
 
@@ -11,7 +9,7 @@ internal class EventLoop(internal val queue: EventQueue) {
             val event = queue.poll() ?: break
             val task = event.task
             // Listen for delay calls
-            task.onReschedule = { rescheduleDelayedTask(task, it) }
+            task.onReschedule = { queue.enqueueDelayed(task, it) }
             task.invokeOnCompletion {
                 if (it.isFailure) {
                     // Quit the loop if any task failed
@@ -26,16 +24,6 @@ internal class EventLoop(internal val queue: EventQueue) {
             }
         }
         quited = true
-    }
-
-    private fun rescheduleDelayedTask(task: TaskImpl<*>, delayMillis: Long) {
-        if (delayMillis <= 0) return
-        val now = System.nanoTime()
-        val delayedEvent = Event(
-            task = task,
-            time = now + TimeUnit.MILLISECONDS.toNanos(delayMillis),
-        )
-        queue.enqueue(delayedEvent)
     }
 
     fun quit() {
