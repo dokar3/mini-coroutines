@@ -11,8 +11,8 @@ import kotlin.coroutines.suspendCoroutine
 
 typealias OnCompletion<T> = (Result<T>) -> Unit
 
-fun <T> Task<T>.invokeOnCompletion(block: OnCompletion<T>) {
-    (this as? TaskImpl)?.invokeOnCompletion(block)
+fun <T> Task<T>.invokeOnCompletion(block: (cause: Throwable?) -> Unit) {
+    (this as? TaskImpl)?.invokeOnCompletion { block(it.exceptionOrNull()) }
 }
 
 suspend fun <T> Iterable<Task<T>>.awaitAll(): List<T> {
@@ -63,6 +63,7 @@ internal class TaskImpl<T>(
     private var coroutine: Continuation<Unit>? = null
 
     private val onCompletionCallbacks = mutableListOf<OnCompletion<T>>()
+    private val callbacksLock = Any()
 
     private val dispatcher = context[CoroutineDispatcher]
         ?: error("The current context does not contain a CoroutineDispatcher")
@@ -70,7 +71,7 @@ internal class TaskImpl<T>(
     override val context: CoroutineContext = context + TaskDelay(this)
 
     override fun resumeWith(result: Result<T>) {
-        synchronized(onCompletionCallbacks) {
+        synchronized(callbacksLock) {
             this.result = result
             onCompletionCallbacks.forEach { it.invoke(result) }
             onCompletionCallbacks.clear()
@@ -119,12 +120,18 @@ internal class TaskImpl<T>(
             block(result!!)
             return
         }
-        synchronized(onCompletionCallbacks) {
+        synchronized(callbacksLock) {
             if (result != null) {
                 block(result!!)
             } else {
                 onCompletionCallbacks.add(block)
             }
+        }
+    }
+
+    fun removeOnCompletion(block: OnCompletion<T>) {
+        synchronized(callbacksLock) {
+            onCompletionCallbacks.remove(block)
         }
     }
 }

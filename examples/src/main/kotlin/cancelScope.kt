@@ -8,6 +8,7 @@ fun main(): Unit = runBlocking {
         println("Task 1 finished")
     }
     launch {
+        delay(100)
         cancel()
     }
 }
