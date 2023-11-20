@@ -13,7 +13,7 @@ fun main(): Unit = runBlocking {
                 done.incrementAndGet()
             }
         }
-        tasks.forEach { it.await() }
+        tasks.forEach { it.join() }
     }
     check(done.get() == count)
     println("$count coroutines finished in ${millis}ms")

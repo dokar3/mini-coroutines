@@ -53,7 +53,7 @@ internal class CoroutineScopeImpl(
     override suspend fun join() {
         tasks.toTypedArray().forEach {
             try {
-                it.await()
+                it.join()
             } catch (_: TaskCancellationException) {
                 // Task canceled
             }

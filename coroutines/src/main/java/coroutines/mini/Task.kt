@@ -42,6 +42,10 @@ internal fun <T> Task<T>.blockingGet(): T {
 interface Task<T> {
     suspend fun await(): T
 
+    suspend fun join() {
+        await()
+    }
+
     fun cancel()
 }
 
