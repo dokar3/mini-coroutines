@@ -6,8 +6,8 @@ A minimal Kotlin/JVM Coroutines runtime.
 
 ```
 ======= .kt Line Counter =======
-          Lines: 486
-Non-empty lines: 403
+          Lines: 502
+Non-empty lines: 416
 ```
 
 ### What's present?
@@ -35,8 +35,9 @@ Non-empty lines: 403
 
 # Examples
 
+### Launch 100K Coroutines
+
 ```kotlin
-// Launch 100K Coroutines
 fun main(): Unit = runBlocking {
     val count = 100_000
     val done = AtomicInteger(0)
@@ -47,9 +48,30 @@ fun main(): Unit = runBlocking {
                 done.incrementAndGet()
             }
         }
-        tasks.forEach { it.await() }
+        tasks.forEach { it.join() }
     }
     check(done.get() == count)
     println("$count coroutines finished in ${millis}ms")
+}
+```
+
+### Await all
+
+```kotlin
+fun main(): Unit = runBlocking {
+    val tasks = listOf(
+        launch {
+            delay(1000)
+            "Hello"
+        },
+        launch {
+            delay(1500)
+            "World"
+        }
+    )
+    val elapsed = measureTimeMillis {
+        println(tasks.awaitAll().joinToString())
+    }
+    check(elapsed <= 1600) { "elapsed: ${elapsed}ms" }
 }
 ```
