@@ -6,8 +6,8 @@ A minimal Kotlin/JVM Coroutines runtime.
 
 ```
 ======= .kt Line Counter =======
-          Lines: 502
-Non-empty lines: 416
+          Lines: 478
+Non-empty lines: 392
 ```
 
 ### What's present?
@@ -51,7 +51,7 @@ fun main(): Unit = runBlocking {
         tasks.forEach { it.join() }
     }
     check(done.get() == count)
-    println("$count coroutines finished in ${millis}ms")
+    println("$count Coroutines finished in ${millis}ms")
 }
 ```
 
@@ -72,6 +72,17 @@ fun main(): Unit = runBlocking {
     val elapsed = measureTimeMillis {
         println(tasks.awaitAll().joinToString())
     }
-    check(elapsed <= 1600) { "elapsed: ${elapsed}ms" }
+    check(elapsed <= 1600)
+}
+```
+
+### Context (dispatcher) switching
+
+```kotlin
+fun main(): Unit = runBlocking {
+    val thread = Thread.currentThread()
+    withContext(Dispatchers.Default) {
+        check(thread != Thread.currentThread())
+    }
 }
 ```
