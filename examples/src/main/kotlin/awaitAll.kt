@@ -17,5 +17,5 @@ fun main(): Unit = runBlocking {
     val elapsed = measureTimeMillis {
         println(tasks.awaitAll().joinToString())
     }
-    check(elapsed <= 1600) { "elapsed: ${elapsed}ms" }
+    check(elapsed <= 1600)
 }

@@ -1,5 +1,6 @@
 package coroutines.mini
 
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
@@ -40,6 +41,8 @@ internal fun <T> Task<T>.blockingGet(): T {
 }
 
 interface Task<T> {
+    val isActive: Boolean
+
     suspend fun await(): T
 
     suspend fun join() {
@@ -52,6 +55,7 @@ interface Task<T> {
 internal class TaskImpl<T>(
     private val block: suspend () -> T,
     context: CoroutineContext,
+    private val onReschedule: (task: Task<T>, delayMillis: Long) -> Unit,
 ) : Task<T>, Runnable, Continuation<T> {
     private var isCanceled = false
 
@@ -61,25 +65,21 @@ internal class TaskImpl<T>(
     internal val isCompleted: Boolean
         get() = isCanceled || result != null
 
-    @Volatile
-    var onReschedule: ((delayMillis: Long) -> Unit)? = null
-
     private var coroutine: Continuation<Unit>? = null
 
-    private val onCompletionCallbacks = mutableListOf<OnCompletion<T>>()
-    private val callbacksLock = Any()
+    private val onCompletionCallbacks = ConcurrentLinkedQueue<OnCompletion<T>>()
 
     private val dispatcher = context[CoroutineDispatcher]
         ?: error("The current context does not contain a CoroutineDispatcher")
 
+    override val isActive: Boolean get() = !isCompleted
+
     override val context: CoroutineContext = context + TaskDelay(this)
 
     override fun resumeWith(result: Result<T>) {
-        synchronized(callbacksLock) {
-            this.result = result
-            onCompletionCallbacks.forEach { it.invoke(result) }
-            onCompletionCallbacks.clear()
-        }
+        this.result = result
+        onCompletionCallbacks.forEach { it.invoke(result) }
+        onCompletionCallbacks.clear()
     }
 
     @Deprecated("Do not call run() manually")
@@ -124,20 +124,14 @@ internal class TaskImpl<T>(
             block(result!!)
             return
         }
-        synchronized(callbacksLock) {
-            if (result != null) {
-                block(result!!)
-            } else {
-                onCompletionCallbacks.add(block)
-            }
+        if (result != null) {
+            block(result!!)
+        } else {
+            onCompletionCallbacks.add(block)
         }
     }
 
-    fun removeOnCompletion(block: OnCompletion<T>) {
-        synchronized(callbacksLock) {
-            onCompletionCallbacks.remove(block)
-        }
-    }
+    fun reschedule(delayMillis: Long) = onReschedule(this, delayMillis)
 }
 
 class TaskCancellationException(

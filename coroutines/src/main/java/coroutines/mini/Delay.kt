@@ -47,6 +47,6 @@ internal class TaskDelay(
         continuation: Continuation<Unit>,
     ) {
         if (timeMillis <= 0 || task.isCompleted) return
-        task.onReschedule?.invoke(timeMillis)
+        task.reschedule(timeMillis)
     }
 }

@@ -16,5 +16,5 @@ fun main(): Unit = runBlocking {
         tasks.forEach { it.join() }
     }
     check(done.get() == count)
-    println("$count coroutines finished in ${millis}ms")
+    println("$count Coroutines finished in ${millis}ms")
 }

@@ -9,7 +9,7 @@ fun <T> runBlocking(
     context: CoroutineContext = Dispatchers.Unconfined,
     block: suspend CoroutineScope.() -> T
 ): T {
-    val queue = EventQueue()
+    val queue = TaskQueue()
     val eventLoop = EventLoop(queue = queue)
     val task = queue.enqueue(context = context) {
         val scope = CoroutineScopeImpl(eventLoop = eventLoop)

@@ -33,7 +33,7 @@ object Dispatchers {
     }
 }
 
-private class ThreadPoolDispatcher(
+class ThreadPoolDispatcher(
     private val pool: ExecutorService,
 ) : CoroutineDispatcher,
     CoroutineContext.Element,

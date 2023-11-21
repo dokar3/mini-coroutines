@@ -1,5 +1,6 @@
 package coroutines.mini
 
+import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.coroutines.CoroutineContext
 
 interface CoroutineScope {
@@ -23,7 +24,7 @@ interface CoroutineScope {
 internal class CoroutineScopeImpl(
     private val eventLoop: EventLoop,
 ) : CoroutineScope {
-    private val tasks = linkedSetOf<Task<*>>()
+    private val tasks = ConcurrentLinkedQueue<Task<*>>()
 
     override val isActive: Boolean get() = !eventLoop.isQuited()
 
@@ -36,6 +37,7 @@ internal class CoroutineScopeImpl(
                 tasks.add(task)
                 task.invokeOnCompletion {
                     tasks.remove(task)
+                    onTaskCompleted(it)
                 }
             }
     }
@@ -51,12 +53,18 @@ internal class CoroutineScopeImpl(
     }
 
     override suspend fun join() {
-        tasks.toTypedArray().forEach {
+        for (task in tasks) {
             try {
-                it.join()
+                task.join()
             } catch (_: TaskCancellationException) {
                 // Task canceled
             }
         }
+    }
+
+    private fun onTaskCompleted(error: Throwable?) {
+        error ?: return
+        eventLoop.quit()
+        throw error
     }
 }
