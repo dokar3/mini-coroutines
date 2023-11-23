@@ -29,7 +29,7 @@ internal class TaskQueue {
             if (event != null) {
                 return event
             }
-            val delayedEvent = delayedEvent()
+            val delayedEvent = pollDelayed()
             if (stopped) return null
             if (delayedEvent == null) {
                 park()
@@ -40,7 +40,7 @@ internal class TaskQueue {
             val elapsed = parkNanos(delay)
             if (elapsed >= delay) {
                 // Done, remove the event
-                removedDelayed(delayedEvent)
+                removeDelayed(delayedEvent)
                 return delayedEvent.task
             }
         }
@@ -74,17 +74,11 @@ internal class TaskQueue {
         unpark()
     }
 
-    private fun delayedEvent(): DelayedTask? {
-        return delayQueue.firstOrNull()
-    }
+    private fun pollDelayed(): DelayedTask? = delayQueue.firstOrNull()
 
-    private fun removedDelayed(delayedTask: DelayedTask) {
-        delayQueue.remove(delayedTask)
-    }
+    private fun removeDelayed(delayedTask: DelayedTask) = delayQueue.remove(delayedTask)
 
-    private fun park() = parkOperation {
-        LockSupport.park()
-    }
+    private fun park() = parkOperation { LockSupport.park() }
 
     private fun parkNanos(nanos: Long): Long {
         if (nanos <= 0L) return 0
@@ -99,9 +93,7 @@ internal class TaskQueue {
         parkedThread = null
     }
 
-    private fun unpark() {
-        parkedThread?.let { LockSupport.unpark(it) }
-    }
+    private fun unpark() = parkedThread?.let { LockSupport.unpark(it) }
 
     internal fun stopPolling() {
         stopped = true
