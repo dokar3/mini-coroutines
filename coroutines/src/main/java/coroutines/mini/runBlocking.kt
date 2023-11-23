@@ -18,6 +18,7 @@ fun <T> runBlocking(
         eventLoop.quit()
         result
     }
+    task.invokeOnCompletion { error -> error?.let { throw it } }
     eventLoop.loop()
     Dispatchers.shutdown()
     return task.blockingGet()
