@@ -56,7 +56,7 @@ internal class TaskImpl<T>(
     private val block: suspend () -> T,
     context: CoroutineContext,
     private val onReschedule: (task: Task<T>, delayMillis: Long) -> Unit,
-) : Task<T>, Runnable, Continuation<T> {
+) : Task<T>, Runnable, Continuation<T>, Delay {
     private var isCanceled = false
 
     @Volatile
@@ -74,7 +74,7 @@ internal class TaskImpl<T>(
 
     override val isActive: Boolean get() = !isCompleted
 
-    override val context: CoroutineContext = context + TaskDelay(this)
+    override val context: CoroutineContext = context + this
 
     override fun resumeWith(result: Result<T>) {
         this.result = result
@@ -115,6 +115,13 @@ internal class TaskImpl<T>(
         resumeWith(Result.failure(TaskCancellationException(this)))
     }
 
+    override fun scheduleResumeAfterDelay(
+        timeMillis: Long,
+        continuation: Continuation<Unit>,
+    ) {
+        onReschedule(this, timeMillis)
+    }
+
     fun start() {
         dispatcher.dispatch(this)
     }
@@ -130,8 +137,6 @@ internal class TaskImpl<T>(
             onCompletionCallbacks.add(block)
         }
     }
-
-    fun reschedule(delayMillis: Long) = onReschedule(this, delayMillis)
 }
 
 class TaskCancellationException(
