@@ -13,6 +13,8 @@ interface CoroutineDispatcher : CoroutineContext.Element {
 
     fun shutdown()
 
+    override val key: CoroutineContext.Key<*> get() = CoroutineDispatcher
+
     companion object : CoroutineContext.Key<CoroutineDispatcher>
 }
 
@@ -35,9 +37,7 @@ object Dispatchers {
 
 class ThreadPoolDispatcher(
     private val pool: ExecutorService,
-) : CoroutineDispatcher,
-    CoroutineContext.Element,
-    CoroutineContext.Key<ThreadPoolDispatcher> {
+) : CoroutineDispatcher {
     override fun dispatch(task: Runnable) {
         pool.submit(task)
     }
@@ -45,8 +45,6 @@ class ThreadPoolDispatcher(
     override fun shutdown() {
         pool.shutdown()
     }
-
-    override val key: CoroutineContext.Key<*> = CoroutineDispatcher
 }
 
 private object UnconfinedDispatcher : CoroutineDispatcher {
@@ -55,6 +53,4 @@ private object UnconfinedDispatcher : CoroutineDispatcher {
     }
 
     override fun shutdown() {}
-
-    override val key: CoroutineContext.Key<*> = CoroutineDispatcher
 }
