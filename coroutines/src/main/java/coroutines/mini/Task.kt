@@ -61,6 +61,7 @@ internal class TaskImpl<T>(
 
     @Volatile
     private var result: Result<T>? = null
+    private val resultLock = Any()
 
     internal val isCompleted: Boolean
         get() = isCanceled || result != null
@@ -77,9 +78,11 @@ internal class TaskImpl<T>(
     override val context: CoroutineContext = context + this
 
     override fun resumeWith(result: Result<T>) {
-        this.result = result
-        onCompletionCallbacks.forEach { it.invoke(result) }
-        onCompletionCallbacks.clear()
+        synchronized(resultLock) {
+            this.result = result
+            onCompletionCallbacks.forEach { it.invoke(result) }
+            onCompletionCallbacks.clear()
+        }
     }
 
     @Deprecated("Do not call run() manually")
@@ -131,10 +134,12 @@ internal class TaskImpl<T>(
             block(result!!)
             return
         }
-        if (result != null) {
-            block(result!!)
-        } else {
-            onCompletionCallbacks.add(block)
+        synchronized(resultLock) {
+            if (result != null) {
+                block(result!!)
+            } else {
+                onCompletionCallbacks.add(block)
+            }
         }
     }
 }
