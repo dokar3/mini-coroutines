@@ -16,9 +16,10 @@ internal class TaskQueue {
     private var parkedThread: Thread? = null
 
     private val queue = ConcurrentLinkedQueue<Task<*>>()
-    private val delayedTaskComparator = Comparator<DelayedTask> { a, b ->
-        a.time.toString().compareTo(b.time.toString())
-    }
+    private val delayedTaskComparator = Comparator
+        .comparingLong<DelayedTask> { it.time }
+        // This avoids the set ignoring tasks that have the same time
+        .thenComparing(Comparator.comparingInt { it.task.hashCode() })
     private val delayQueue = ConcurrentSkipListSet(delayedTaskComparator)
 
     private var stopped = false
@@ -29,14 +30,13 @@ internal class TaskQueue {
             if (event != null) {
                 return event
             }
-            val delayedEvent = pollDelayed()
+            val delayedEvent = peekDelayed()
             if (stopped) return null
             if (delayedEvent == null) {
                 park()
                 continue
             }
-            val now = System.nanoTime()
-            val delay = delayedEvent.time - now
+            val delay = delayedEvent.time - System.nanoTime()
             val elapsed = parkNanos(delay)
             if (elapsed >= delay) {
                 // Done, remove the event
@@ -61,9 +61,7 @@ internal class TaskQueue {
         return task
     }
 
-    private fun pollTask(): Task<*>? {
-        return queue.poll()
-    }
+    private fun pollTask(): Task<*>? = queue.poll()
 
     private fun <T> enqueueDelayed(task: Task<T>, delayMillis: Long) {
         val delayedTask = DelayedTask(
@@ -74,7 +72,7 @@ internal class TaskQueue {
         unpark()
     }
 
-    private fun pollDelayed(): DelayedTask? = delayQueue.firstOrNull()
+    private fun peekDelayed(): DelayedTask? = delayQueue.firstOrNull()
 
     private fun removeDelayed(delayedTask: DelayedTask) = delayQueue.remove(delayedTask)
 
