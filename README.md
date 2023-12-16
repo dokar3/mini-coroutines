@@ -31,7 +31,7 @@ Non-empty lines: 392
 
 ### Can I use it in my project?
 
-**NO**. It's for learning purposes, it lacks features, can be buggy, has no tests, and isn't performant. So don't use it for other purposes.
+**NO**. It's for learning purposes, it lacks features, can be buggy, has no tests, and isn't optimized. So don't use it for other purposes.
 
 # Examples
 
